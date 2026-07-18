@@ -1,85 +1,95 @@
 package com.example.achyuta.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.achyuta.ui.components.AppHeader
+import com.example.achyuta.ui.components.BottomNavigationBar
+import com.example.achyuta.ui.components.MicrophoneButton
+import com.example.achyuta.ui.components.QuoteCard
+import com.example.achyuta.ui.components.StatusCard
+import com.example.achyuta.ui.theme.Gold
 
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    recognizedText: String = "",
+    aiResponse: String = "",
+    onMicClick: () -> Unit
 ) {
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF071B2F))
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp)
     ) {
+
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
 
-            Text(
-                text = "ACHYUTA",
-                color = Color(0xFFFFD54F),
-                fontSize = 34.sp,
-                fontWeight = FontWeight.Bold
+            AppHeader()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            MicrophoneButton(
+                onMicClick = onMicClick
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "Hare Krishna 🙏",
-                color = Color.White,
-                fontSize = 22.sp
-            )
+            StatusCard()
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "Your Personal AI Assistant",
-                color = Color.LightGray,
-                fontSize = 16.sp
-            )
+            QuoteCard()
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1565C0)
-                )
-            ) {
+            if (recognizedText.isNotBlank()) {
                 Text(
-                    text = "🎤 Listen",
-                    fontSize = 20.sp
+                    text = "You said:",
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = recognizedText,
+                    color = Gold
                 )
             }
 
-            Spacer(modifier = Modifier.height(50.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "Status : Ready",
-                color = Color(0xFF81C784),
-                style = MaterialTheme.typography.bodyLarge
-            )
+            if (aiResponse.isNotBlank()) {
+                Text(
+                    text = "Achyuta:",
+                    color = Color.White
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = "Version 0.1",
-                color = Color.Gray
-            )
+                Text(
+                    text = aiResponse,
+                    color = Gold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            BottomNavigationBar()
         }
     }
 }
