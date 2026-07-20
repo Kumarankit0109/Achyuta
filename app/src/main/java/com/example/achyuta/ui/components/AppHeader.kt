@@ -49,14 +49,5 @@ fun AppHeader() {
         )
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Hare Krishna 🙏",
-            color = WhiteText,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }

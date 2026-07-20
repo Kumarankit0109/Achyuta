@@ -3,11 +3,11 @@ package com.example.achyuta
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.achyuta.viewmodel.ChatViewModel
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.speech.RecognizerIntent
+import com.example.achyuta.actions.AssistantActions
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,19 +15,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.achyuta.tts.TextToSpeechManager
 import com.example.achyuta.ui.screens.HomeScreen
 import com.example.achyuta.ui.theme.AchyutaTheme
+import com.example.achyuta.viewmodel.ChatViewModel
 import java.util.Locale
+import com.example.achyuta.model.AssistantState
 
 class MainActivity : ComponentActivity() {
 
-    private var recognizedText by mutableStateOf("")
     private var askGroq: ((String) -> Unit)? = null
+
+    private lateinit var ttsManager: TextToSpeechManager
+
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -49,12 +53,27 @@ class MainActivity : ComponentActivity() {
 
                 android.util.Log.d("ACHYUTA", "Matches = $matches")
 
-                recognizedText = matches?.firstOrNull() ?: "No speech detected"
-                if (recognizedText != "No speech detected") {
-                    askGroq?.invoke(recognizedText)
+                val spokenText = matches?.firstOrNull()
+                android.util.Log.d("ACHYUTA", "Spoken Text = $spokenText")
+                if (!spokenText.isNullOrBlank()) {
+
+                    if (!AssistantActions.handleCommand(this, spokenText)) {
+                        askGroq?.invoke(spokenText)
+                    }
+
+                } else {
+                    android.util.Log.d(
+                        "ACHYUTA",
+                        "No speech detected"
+                    )
                 }
+
             } else {
-                recognizedText = "Cancelled: ${result.resultCode}"
+
+                android.util.Log.d(
+                    "ACHYUTA",
+                    "Speech cancelled: ${result.resultCode}"
+                )
             }
         }
 
@@ -74,23 +93,46 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        // Initialize Text-to-Speech
+        ttsManager = TextToSpeechManager(this)
+        window.decorView.postDelayed({
+            ttsManager.speak("Hello, I am Achyuta.")
+        }, 4000)
         setContent {
 
             AchyutaTheme {
+
                 val chatViewModel: ChatViewModel = viewModel()
+
+                // Speak every new AI response
+                LaunchedEffect(chatViewModel.uiState.response) {
+
+                    val response = chatViewModel.uiState.response
+
+                    android.util.Log.d("ACHYUTA_TTS", "Response = $response")
+
+                    if (response.isNotBlank()) {
+                        ttsManager.speak(response)
+                    }
+                }
+
                 askGroq = { prompt ->
                     chatViewModel.askGroq(prompt)
                 }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
 
                     HomeScreen(
                         modifier = Modifier.padding(innerPadding),
-                        recognizedText = recognizedText,
-                        aiResponse = chatViewModel.response,
+                        uiState = chatViewModel.uiState,
                         onMicClick = {
-                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+
+                            val intent = Intent(
+                                RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+                            ).apply {
+
                                 putExtra(
                                     RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                                     RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
@@ -113,14 +155,28 @@ class MainActivity : ComponentActivity() {
                             }
 
                             if (intent.resolveActivity(packageManager) != null) {
+
+                                chatViewModel.setListening()
+
                                 speechLauncher.launch(intent)
+
                             } else {
-                                recognizedText = "Speech recognition not available"
+
+                                Toast.makeText(
+                                    this,
+                                    "Speech recognition not available",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     )
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        ttsManager.shutdown()
     }
 }
